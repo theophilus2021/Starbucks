@@ -13,13 +13,15 @@ set.seed(123)
 
 
 SBUX_Data<-read.csv("starbucks_drinkMenu_expanded.csv", stringsAsFactors = FALSE)
+
+
 head(SBUX_Data)
 
 # Step 1: Data cleaning 
 
-# Delete, fill NULL with averages, etc
-
-
+# Fill NA with 0, etc 
+SBUX_Data$Caffeine[is.na(SBUX_Data$Caffeine)]<-0
+SBUX_Data$Total_Fat[is.na(SBUX_Data$Total_Fat)]<-0
 
 # Step 2: Data exploration and analysis
 # 2.1 structure, features, target
@@ -47,24 +49,22 @@ SBUX_Data$Caffeine <-as.numeric(SBUX_Data$Caffeine)
 SBUX_Data$Iron <-as.numeric(SBUX_Data$Iron)
 SBUX_Data$Total_Fat <-as.numeric(SBUX_Data$Total_Fat)
 
-summary(SBUX_Data$VitA)
-
-histogram(SBUX_Data$VitA)
-SBUX_Data$VitC
-
-# 2.2 Eliminate features/attributes not useful 
-SBUX <- SBUX_data %>% select(c())
+# boxplot
+boxplot(SBUX_Data$VitA)
+boxplot(SBUX_Data$VitC)
+boxplot(SBUX_Data$Calcium)
+boxplot(SBUX_Data$Iron)
 
 
-# 2.4.a turn features to numeric 
 # 2.5 plots and correlation 
 
-
-
-
 # correlation table 
-cor(SBUX_Data[15:18])
+cor(SBUX_Data[4:18])
 
-# scatterplot 
-pairs(SBUX_Data[15:18])
+# correlation plots 
+pairs(SBUX_Data[4:10])
+pairs(SBUX_Data[10:18])
+
+# 2.6 Eliminate features/attributes not useful 
+#SBUX <- SBUX_data %>% select(c())
 
