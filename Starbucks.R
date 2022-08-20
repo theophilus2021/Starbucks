@@ -42,6 +42,7 @@ SBUX_Data$Calcium<-gsub("%","", as.character(SBUX_Data$Calcium))
 SBUX_Data$Caffeine<-gsub("%","", as.character(SBUX_Data$Caffeine))
 SBUX_Data$Iron<-gsub("%","", as.character(SBUX_Data$Iron))
 
+# Convert character class to numeric data class
 SBUX_Data$VitA <-as.numeric(SBUX_Data$VitA)
 SBUX_Data$VitC <-as.numeric(SBUX_Data$VitC)
 SBUX_Data$Calcium <-as.numeric(SBUX_Data$Calcium)
