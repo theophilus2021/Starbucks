@@ -20,8 +20,11 @@ head(SBUX_Data)
 # Step 1: Data cleaning 
 
 # Fill NA with 0, etc 
+# Set 0 caffeine to Iced Tea, Chocolate Smoothies,23 NAs 
 SBUX_Data$Caffeine[is.na(SBUX_Data$Caffeine)]<-0
-SBUX_Data$Total_Fat[is.na(SBUX_Data$Total_Fat)]<-0
+
+# Set 3.4 Total Fat to Frappucino Blended Creme 
+SBUX_Data$Total_Fat[is.na(SBUX_Data$Total_Fat)]<-3.4
 
 # Step 2: Data exploration and analysis
 # 2.1 structure, features, target
@@ -68,4 +71,5 @@ pairs(SBUX_Data[10:18])
 
 # 2.6 Eliminate features/attributes not useful 
 #SBUX <- SBUX_data %>% select(c())
+
 
