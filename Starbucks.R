@@ -1,5 +1,6 @@
 # Step 0
-#install.packages("randomForest", repos = "https://cran.microsoft.com/")
+install.packages("randomForest", repos = "https://cran.microsoft.com/")
+install.packages("rattle")
 
 # Load libraries
 library(caret)
@@ -9,13 +10,14 @@ library(e1071)
 library(randomForest)
 
 # Set random seed
-set.seed(123)
+#set.seed(123)
 
 
 SBUX_Data<-read.csv("starbucks_drinkMenu_expanded.csv", stringsAsFactors = FALSE)
 
 
 head(SBUX_Data)
+dim(SBUX_Data)
 
 # Step 1: Data cleaning 
 
@@ -25,9 +27,18 @@ names(SBUX_Data)<-c("Beverage_cat","Beverage","Beverage_prep",
                     "Sodium","Carb","Chole","Fibre","Sugars","Protein",
                     "VitA","VitC","Calcium","Iron","Caffeine")
 
+
+### we only needed one 'factor' variable for our analysis so, it is better to delete the Beverage and Beverage_prep variables.
+
+SBUX_Data$Beverage<-NULL
+SBUX_Data$Beverage_prep<-NULL
+dim(SBUX_Data)
+
+# Fill NA cells in data with 0
+SBUX_Data[is.na(SBUX_Data)] <- 0
 # Fill NA with 0, etc 
 # Set 0 caffeine to Iced Tea, Chocolate Smoothies,23 NAs 
-SBUX_Data$Caffeine[is.na(SBUX_Data$Caffeine)]<-0
+SBUX_Data$Caffeine[is.na(SBUX_Data$Caffeine)] <- 0
 
 # Set 3.4 Total Fat to Frappucino Blended Creme 
 SBUX_Data$Total_Fat[is.na(SBUX_Data$Total_Fat)]<-3.4
@@ -54,6 +65,8 @@ SBUX_Data$Caffeine <-as.numeric(SBUX_Data$Caffeine)
 SBUX_Data$Iron <-as.numeric(SBUX_Data$Iron)
 SBUX_Data$Total_Fat <-as.numeric(SBUX_Data$Total_Fat)
 
+# Fill NA cells in data with 0
+SBUX_Data[is.na(SBUX_Data)] <- 0
 # boxplot
 boxplot(SBUX_Data$VitA)
 boxplot(SBUX_Data$VitC)
@@ -66,16 +79,17 @@ boxplot(SBUX_Data$Iron)
 # correlation table 
 cor(SBUX_Data[4:9])
 cor(SBUX_Data[8:13])
-cor(SBUX_Data[12:18])
+cor(SBUX_Data[12:16])
 
 
 # correlation plots 
 pairs(SBUX_Data[4:9])
 pairs(SBUX_Data[8:13])
-pairs(SBUX_Data[12:18])
+pairs(SBUX_Data[12:16])
 
 # 2.6 Eliminate features/attributes not useful 
 #SBUX <- SBUX_data %>% select(c())
+
 
 # Parition 70% for training
 Train<-createDataPartition(SBUX_Data$Sugars, p=.70, list = FALSE)
@@ -102,4 +116,63 @@ summary(Model_calories)
 Model_protein<-lm(Protein~Calories+Sugars+Total_Fat+Trans_Fat+Sat_Fat+Sodium+Carb+Chole+Fibre+VitA+VitC+Calcium+Iron+Caffeine,Train_SBUX)
 summary(Model_protein)
 
+
+
+##sets our classification variable to a factor variable
+SBUX_Data$Beverage_cat<-factor(SBUX_Data$Beverage_cat)
+
+Train_SBUX$Beverage_cat<-factor(Train_SBUX$Beverage_cat)
+Test_SBUX$Beverage_cat<-factor(Test_SBUX$Beverage_cat)
+
+class(Train_SBUX$Beverage_cat)
+
+# add all categories of beverages to test data, since after splitting the data to treain and test, the test data lacks two categories
+levels(Test_SBUX$Beverage_cat) <- c("Classic Espresso Drinks" ,          "Coffee" ,                           "Frappuccino® Blended Coffee",      
+                  "Frappuccino® Blended Crème",        "Frappuccino® Light Blended Coffee", "Shaken Iced Beverages" ,           
+                   "Signature Espresso Drinks"  ,       "Smoothies" ,                       "Tazo® Tea Drinks"        )
+
+## CART Implementation
+CART_Model <- train(Beverage_cat ~ ., data = Train_SBUX, method = "rpart",
+                    trControl = trainControl("cv", number = 10),
+                    tuneLength = 10) #increasing tunelength increases regularization penalty
+##the "cv", number = 10 refers to 10-fold cross validation on the training data
+plot(CART_Model) #produces plot of cross-validation results
+CART_Model$bestTune #returns optimal complexity parameter
+
+confusionMatrix(predict(CART_Model, Test_SBUX), Test_SBUX$Beverage_cat) ##Validation
+
+#Creates a decision tree for the CART_Model
+par(xpd=NA)
+plot(CART_Model$finalModel)
+text(CART_Model$finalModel, digits = 3)
+
+
+# Random Forest Implementation
+#caret package implementation with 3-fold cross validation
+Forest_Model <- train(Beverage_cat ~ ., method="rf", 
+                      trControl=trainControl(method = "cv", number = 3),
+                      preProcess=c("center", "scale"), data=Train_SBUX)
+print(Forest_Model)
+
+
+confusionMatrix(predict(Forest_Model, Test_SBUX), Test_SBUX$Beverage_cat)
+
+
+#random forest package implementation
+Forest_Model_2 <- randomForest(Beverage_cat ~., Train_SBUX)
+print(Forest_Model_2)
+
+
+#Support Vector Machines Implementation
+SVM1<-svm(Beverage_cat~., data = Train_SBUX, cost=1000, cross = 10, gamma=.001)
+confusionMatrix(predict(SVM1, Test_SBUX), Test_SBUX$Beverage_cat)
+
+#tuning the SVM (validation)
+svm_tune <- tune(svm, train.x=Train_SBUX[,-1], train.y=Train_SBUX[,1], 
+                 kernel="radial", ranges=list(cost=10^(-1:2), gamma=c(.5,1,2)))
+print(svm_tune) ###printed cott=10 and gamma=.5
+
+#re-estimate the model with the optimally tuned parameters
+SVM_RETUNE<-svm(Beverage_cat~., data = Train_SBUX, cost=10, cross = 10, gamma=.5)
+confusionMatrix(predict(SVM_RETUNE, Test_SBUX), Test_SBUX$Beverage_cat)
 
