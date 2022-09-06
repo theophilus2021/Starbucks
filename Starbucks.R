@@ -1,6 +1,6 @@
 # Step 0
-install.packages("randomForest", repos = "https://cran.microsoft.com/")
-install.packages("rattle")
+#install.packages("randomForest", repos = "https://cran.microsoft.com/")
+#install.packages("rattle")
 
 # Load libraries
 library(caret)
@@ -116,6 +116,26 @@ summary(Model_calories)
 Model_protein<-lm(Protein~Calories+Sugars+Total_Fat+Trans_Fat+Sat_Fat+Sodium+Carb+Chole+Fibre+VitA+VitC+Calcium+Iron+Caffeine,Train_SBUX)
 summary(Model_protein)
 
+#############
+# Model #1 ##
+#############
+# ----- Validate Linear Regression models ------------
+predicted_sugars <- predict(Model_sugars, Test_SBUX)
+predicted_calories <- predict(Model_calories, Test_SBUX)
+predicted_protein <- predict(Model_protein, Test_SBUX)
+
+# compute model performance metrics for sugars, calories, protein model
+data.frame(R2= R2(predicted_sugars, Test_SBUX$Sugars),
+           RMSE = RMSE(predicted_sugars, Test_SBUX$Sugars),
+           MAE = MAE(predicted_sugars, Test_SBUX$Sugars))
+
+data.frame(R2= R2(predicted_calories, Test_SBUX$Calories),
+           RMSE = RMSE(predicted_calories, Test_SBUX$Calories),
+           MAE = MAE(predicted_calories, Test_SBUX$Calories))
+
+data.frame(R2= R2(predicted_protein, Test_SBUX$Protein),
+           RMSE = RMSE(predicted_protein, Test_SBUX$Protein),
+           MAE = MAE(predicted_protein, Test_SBUX$Protein))
 
 
 ##sets our classification variable to a factor variable
@@ -126,12 +146,14 @@ Test_SBUX$Beverage_cat<-factor(Test_SBUX$Beverage_cat)
 
 class(Train_SBUX$Beverage_cat)
 
-# add all categories of beverages to test data, since after splitting the data to treain and test, the test data lacks two categories
-levels(Test_SBUX$Beverage_cat) <- c("Classic Espresso Drinks" ,          "Coffee" ,                           "Frappuccino® Blended Coffee",      
-                  "Frappuccino® Blended Crème",        "Frappuccino® Light Blended Coffee", "Shaken Iced Beverages" ,           
-                   "Signature Espresso Drinks"  ,       "Smoothies" ,                       "Tazo® Tea Drinks"        )
-
-## CART Implementation
+# add all categories of beverages to test data, since after splitting the data to train and test, the test data lacks two categories
+levels(Test_SBUX$Beverage_cat) <- c("Classic Espresso Drinks", "Coffee", "Frappuccino® Blended Coffee",      
+                  "Frappuccino® Blended Crème","Frappuccino® Light Blended Coffee","Shaken Iced Beverages",           
+                   "Signature Espresso Drinks","Smoothies","Tazo® Tea Drinks")
+#############
+# Model #2 ##
+#############
+## ---------------CART Implementation  ---------------
 CART_Model <- train(Beverage_cat ~ ., data = Train_SBUX, method = "rpart",
                     trControl = trainControl("cv", number = 10),
                     tuneLength = 10) #increasing tunelength increases regularization penalty
@@ -146,18 +168,23 @@ par(xpd=NA)
 plot(CART_Model$finalModel)
 text(CART_Model$finalModel, digits = 3)
 
-
-# Random Forest Implementation
-#caret package implementation with 3-fold cross validation
+#############
+# Model not going to use ##
+#############
+#................... Random Forest Implementation.....................
+#caret package implementation with 10-fold cross validation
 Forest_Model <- train(Beverage_cat ~ ., method="rf", 
-                      trControl=trainControl(method = "cv", number = 3),
+                      trControl=trainControl(method = "cv", number = 10),
                       preProcess=c("center", "scale"), data=Train_SBUX)
 print(Forest_Model)
 
 
 confusionMatrix(predict(Forest_Model, Test_SBUX), Test_SBUX$Beverage_cat)
 
-
+#############
+# Model #3 ##
+#############
+## -------------RF package -----------
 #random forest package implementation
 Forest_Model_2 <- randomForest(Beverage_cat ~., Train_SBUX)
 print(Forest_Model_2)
@@ -167,12 +194,40 @@ print(Forest_Model_2)
 SVM1<-svm(Beverage_cat~., data = Train_SBUX, cost=1000, cross = 10, gamma=.001)
 confusionMatrix(predict(SVM1, Test_SBUX), Test_SBUX$Beverage_cat)
 
+#############
+# Model #4 ##
+#############
+#------------------- knn -----------##
+library(class)
+library(e1071)
+SBUX_Data.cat <-SBUX_Data[Train,]
+knn.30 <-knn(train = Train_SBUX[,-1], test = Test_SBUX[,-1], cl = SBUX_Data.cat[,1], k=30)
+cm = table(Test_SBUX[,1], knn.30)
+confusionMatrix(table(Test_SBUX[,1], knn.30))
+
+
+####### Tuning is not necessary because we already know re-tune didn't improve accuracy #######
 #tuning the SVM (validation)
-svm_tune <- tune(svm, train.x=Train_SBUX[,-1], train.y=Train_SBUX[,1], 
-                 kernel="radial", ranges=list(cost=10^(-1:2), gamma=c(.5,1,2)))
-print(svm_tune) ###printed cott=10 and gamma=.5
+#svm_tune <- tune(svm, train.x=Train_SBUX[,-1], train.y=Train_SBUX[,1], 
+#                 kernel="linear", ranges=list(cost=10^(-1:2), gamma=c(.5,1,2)))
+#print(svm_tune) ###printed cott=10 and gamma=.5
 
 #re-estimate the model with the optimally tuned parameters
-SVM_RETUNE<-svm(Beverage_cat~., data = Train_SBUX, cost=10, cross = 10, gamma=.5)
-confusionMatrix(predict(SVM_RETUNE, Test_SBUX), Test_SBUX$Beverage_cat)
+#SVM_RETUNE<-svm(Beverage_cat~., data = Train_SBUX, cost=10, cross = 10, gamma=.5)
+#confusionMatrix(predict(SVM_RETUNE, Test_SBUX), Test_SBUX$Beverage_cat)
+
+
+### naive bayes ########
+## Assume variables are completely independent of each other but reality is not
+## therefore we are not considering this model 
+NB <- naiveBayes(Beverage_cat ~ ., data=Train_SBUX)
+NB
+
+
+
+
+
+
+
+
 
