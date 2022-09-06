@@ -156,20 +156,20 @@ levels(Test_SBUX$Beverage_cat) <- c("Classic Espresso Drinks", "Coffee", "Frappu
 ## ---------------CART Implementation  ---------------
 CART_Model <- train(Beverage_cat ~ ., data = Train_SBUX, method = "rpart",
                     trControl = trainControl("cv", number = 10),
-                    tuneLength = 10) #increasing tunelength increases regularization penalty
-##the "cv", number = 10 refers to 10-fold cross validation on the training data
-plot(CART_Model) #produces plot of cross-validation results
+                    tuneLength = 10)  # 10-fold cross validation on the training data
+plot(CART_Model)   #produces plot of cross-validation results
 CART_Model$bestTune #returns optimal complexity parameter
 
-confusionMatrix(predict(CART_Model, Test_SBUX), Test_SBUX$Beverage_cat) ##Validation
+##Validation
+confusionMatrix(predict(CART_Model, Test_SBUX), Test_SBUX$Beverage_cat) 
 
-#Creates a decision tree for the CART_Model
+# Decision tree for the CART_Model
 par(xpd=NA)
 plot(CART_Model$finalModel)
 text(CART_Model$finalModel, digits = 3)
 
 #############
-# Model not going to use ##
+# Model #3 ##
 #############
 #................... Random Forest Implementation.....................
 #caret package implementation with 10-fold cross validation
@@ -182,7 +182,7 @@ print(Forest_Model)
 confusionMatrix(predict(Forest_Model, Test_SBUX), Test_SBUX$Beverage_cat)
 
 #############
-# Model #3 ##
+# Model Use RF from Caret package instead  ##
 #############
 ## -------------RF package -----------
 #random forest package implementation
