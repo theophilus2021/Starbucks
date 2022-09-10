@@ -12,9 +12,7 @@ library(randomForest)
 # Set random seed
 #set.seed(123)
 
-
 SBUX_Data<-read.csv("starbucks_drinkMenu_expanded.csv", stringsAsFactors = FALSE)
-
 
 head(SBUX_Data)
 dim(SBUX_Data)
@@ -90,19 +88,22 @@ pairs(SBUX_Data[12:16])
 # 2.6 Eliminate features/attributes not useful 
 #SBUX <- SBUX_data %>% select(c())
 
+SBUX_Data<-SBUX_Data %>% dplyr::mutate(Beverage_cat = as.factor(Beverage_cat))
 
 # Parition 70% for training
-Train<-createDataPartition(SBUX_Data$Sugars, p=.70, list = FALSE)
+#set.seed(777)
+#sample_size = floor(0.7*nrow(SBUX_Data))
+Train<-createDataPartition(SBUX_Data$Beverage_cat, p=.70, list = FALSE)
 Train_SBUX<-SBUX_Data[Train,] 
 
 # Parition 30% for valuation and test 
-Val_Test_SBUX<-SBUX_Data[-Train,]
+Test_SBUX<-SBUX_Data[-Train,]
 
 # Parition 15% for valuation 
-Val_SBUX<-createDataPartition(Val_Test_SBUX$Sugars, p=.50, list = FALSE)
+#Val_SBUX<-createDataPartition(Val_Test_SBUX$Sugars, p=.50, list = FALSE)
 
 # Parition 15% for test  
-Test_SBUX<-Val_Test_SBUX[-Train,]
+#Test_SBUX<-Val_Test_SBUX[-Train,]
 
 # Model in terms of sugars
 Model_sugars<-lm(Sugars~Calories+Total_Fat+Trans_Fat+Sat_Fat+Sodium+Carb+Chole+Fibre+Protein+VitA+VitC+Calcium+Iron+Caffeine,Train_SBUX)
@@ -145,11 +146,12 @@ Train_SBUX$Beverage_cat<-factor(Train_SBUX$Beverage_cat)
 Test_SBUX$Beverage_cat<-factor(Test_SBUX$Beverage_cat)
 
 class(Train_SBUX$Beverage_cat)
-
+class(Test_SBUX$Beverage_cat)
+dim(Train_SBUX)
 # add all categories of beverages to test data, since after splitting the data to train and test, the test data lacks two categories
-levels(Test_SBUX$Beverage_cat) <- c("Classic Espresso Drinks", "Coffee", "Frappuccino® Blended Coffee",      
-                  "Frappuccino® Blended Crème","Frappuccino® Light Blended Coffee","Shaken Iced Beverages",           
-                   "Signature Espresso Drinks","Smoothies","Tazo® Tea Drinks")
+#levels(Test_SBUX$Beverage_cat) <- c("Classic Espresso Drinks" ,          "Coffee" ,                           "Frappuccino® Blended Coffee",      
+#                                    "Frappuccino® Blended Crème",        "Frappuccino® Light Blended Coffee", "Shaken Iced Beverages" ,           
+#                                    "Signature Espresso Drinks"  ,       "Smoothies" ,                       "Tazo® Tea Drinks"        )
 #############
 # Model #2 ##
 #############
